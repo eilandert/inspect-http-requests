@@ -143,10 +143,17 @@ class Inspect_Http_Requests_Admin {
 	 */
 	public function ets_inspect_http_requests_capture_request( $response, $context, $transport, $args, $url ) {
 		global $wpdb;
-		if ( false !== strpos( $url, 'doing_wp_cron' ) ) {
-			return;
-		}
-		$table_name = $this->table_name;
+                /* do some error checking */
+                if( is_wp_error( $response ) ) { return; }
+                if( empty( $url )||( $url == "" ) { return; }
+
+                if ( false !== strpos( $url, 'doing_wp_cron' ) ) {
+                        return;
+                }
+                $table_name = $this->table_name;
+
+                /* trim the body to 64 chars and strip it from html tags */
+                $response['body'] = substr( strip_tags( $response['body'] ) , 0, 64 );
 
 		$request_args       = json_encode( $args );
 		$http_api_call_data = apply_filters(

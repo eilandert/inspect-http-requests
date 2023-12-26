@@ -145,16 +145,16 @@ class Inspect_Http_Requests_Admin {
 		global $wpdb;
                 /* do some error checking */
                 if( is_wp_error( $response ) ) { return; }
-                if( empty( $url )||( $url == "" ) { return; }
+                if( empty( $url )||( $url == "" ) ) { return; }
 
+		/* trim the body to 256 chars and strip it from html tags */
+                $response['body'] = substr( strip_tags( $response['body'] ) , 0, 256 );
+		
                 if ( false !== strpos( $url, 'doing_wp_cron' ) ) {
                         return;
                 }
-                $table_name = $this->table_name;
-
-                /* trim the body to 64 chars and strip it from html tags */
-                $response['body'] = substr( strip_tags( $response['body'] ) , 0, 64 );
-
+		$table_name = $this->table_name;
+ 
 		$request_args       = json_encode( $args );
 		$http_api_call_data = apply_filters(
 			'ets_inspect_http_requests_ignore_hostname',

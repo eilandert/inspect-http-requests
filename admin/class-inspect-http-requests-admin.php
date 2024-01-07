@@ -143,10 +143,26 @@ class Inspect_Http_Requests_Admin {
 	 */
 	public function ets_inspect_http_requests_capture_request( $response, $context, $transport, $args, $url ) {
 		global $wpdb;
-		if ( false !== strpos( $url, 'doing_wp_cron' ) ) {
-			return;
-		}
+                /* do some error checking */
+                if( is_wp_error( $response ) ) { return; }
+                if( empty( $url )||( $url == "" ) ) { return; }
+
+		/* trim the body to 256 chars and strip it from html tags */
+                $response['body'] = substr( strip_tags( $response['body'] ) , 0, 256 );
+
+		/* trim URL */
+                $url = substr( $url , 0 , 256 );
+		
+                if ( false !== strpos( $url, 'doing_wp_cron' ) ) {
+                        return;
+                }
 		$table_name = $this->table_name;
+
+                /* Try to get $defaultblock from wp_config.php */
+                $defaultblock = get_option('inspect-http-requests-default-block');
+                if ($defaultblock == true) {
+                        $defaultblock = 1;
+                } else { $defaultblock = 0; }
 
 		$request_args       = json_encode( $args );
 		$http_api_call_data = apply_filters(
@@ -158,7 +174,7 @@ class Inspect_Http_Requests_Admin {
 				'transport'    => $transport,
 				'runtime'      => ( microtime( true ) - $this->start_time ),
 				'date_added'   => date( 'Y-m-d H:i:s' ),
-				'is_blocked'   => 0,
+				'is_blocked'   => $defaultblock,
 			)
 		);
 		if ( false !== $http_api_call_data ) {
@@ -213,9 +229,27 @@ class Inspect_Http_Requests_Admin {
 	 * @since    1.0.0
 	 */
 	public function ets_inspect_http_requests_ignore_specific_hostname( $data ) {
-		if ( false !== strpos( $data['URL'], 'wordpress.org' ) ) {
-			return false;
+
+		/* Try to get $ignored_urls from wp.config.php */
+		$ignored_urls = get_option('inspect-http-requests-ignored-urls');
+
+		/* Not found? Create a default */
+		if ( !is_array( $ignored_urls ) ) {
+			/* Get the BASE-URL of the wordpress site and remove the scheme  */
+			$site_url = home_url();
+			$url_parts = parse_url($site_url);
+	       		$url_base  = $url_parts['host'];
+			/* Create $ignored_urls */
+			$ignored_urls = [ $url_base, 'wordpress.org'];
 		}
+
+		/* Loop through the ignorelist */
+		foreach ($ignored_urls as $iu) {
+                	if ( false !== strpos( $data['URL'], $iu ) ) {
+                        	return false;
+                	}
+		}
+
 		if ( ets_inspect_http_request_check_duplicate_url( $data['URL'] ) ) {
 			return false;
 		}
@@ -280,6 +314,12 @@ class Inspect_Http_Requests_Admin {
 			exit();
 		}
 
+		/* Try to get $defaultblock from wp_config.php */
+                $defaultblock = get_option('inspect-http-requests-default-block');
+                if ($defaultblock == true) {
+                        $defaultblock = 1;
+                } else { $defaultblock = 0; }
+
 		$http_api_call_data = apply_filters( 'ets_inspect_http_requests_ignore_hostname', array(
 			'URL' => sanitize_url ( $_POST['valid_url'] ),
 			'request_args' => '',
@@ -287,7 +327,7 @@ class Inspect_Http_Requests_Admin {
 			'transport' => '', 
 			'runtime' => '',
 			'date_added' => date('Y-m-d H:i:s'),
-			'is_blocked' => 0                    
+			'is_blocked' => $defaultblock, 
 			) ) ;
 		if ( false !== $http_api_call_data ) {
 			if ( ! $wpdb->insert( $table_name, $http_api_call_data ) ) {

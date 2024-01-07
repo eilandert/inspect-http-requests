@@ -1,9 +1,9 @@
 === Plugin Name ===
-Contributors: expresstechsoftware, webbdeveloper, sunnysoni, vanbom
+Contributors: expresstechsoftware, webbdeveloper, sunnysoni, vanbom, eilandert
 Donate link: https://paypal.me/supportets
 Tags: log, wp_http, requests, update checks, api, http_api_debug, pre_http_request, http_request_args
 Requires at least: 3.0.1
-Tested up to: 6.4
+Tested up to: 6.4.2
 Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -18,16 +18,27 @@ Track how much time a request like updating core/plugin/theme taking (may be use
 
 This plugin logs all WP_HTTP requests and displays them in a table listing for easy viewing. It also stores the runtime of each HTTP request.
 
-= Available Hooks =
-Don't log items from a specific hostname:
+If you add a base-url manually, e.g. https://api.woocommerce.com,  there will be no more entries stored for that host.
 
+= Available Hooks =
+
+Add the following to wp-config.php for default blocking:
 <pre>
-add_filter( 'ets_inspect_http_requests_ignore_hostname', function( $data ) {
-    if ( false !== strpos( $data['url'], 'wordpress.org' ) ) {
-        return false;
-    }
-    return $data;
-});
+define( 'inspect_http_requests_default_block', true );
+</pre>
+
+To prevent database littering and sql lookups you can ignore (parts of) hostnames: 
+(without this, your own site and wordpress.org are ignored)
+<pre>
+define( 'inspect_http_requests_ignored_urls', [
+        'your own site',
+        'wordpress.org',
+        'api.woocommerce.com',
+        'wp-rocket.me',
+        'ip-api.com',
+        'ipinfo.io',
+	'api',
+]);
 </pre>
 
 = Important Links =
@@ -55,6 +66,20 @@ add_filter( 'ets_inspect_http_requests_ignore_hostname', function( $data ) {
 == Screenshots ==
 1. The plugin menu is Available inside tools
 
+= 1.0.6 =
+* Support Wordpress 6.4.2
+* Sort the admin page on blocked url's and sort URL's on alphabet
+* Stop logging to database if administrator has manually added a matching base-url.
+* Added option to block by default, define( 'inspect-http-requests-default-block', true ) in wp-config.php
+* Added option to create ignore list in wp-config.php, the defaults are 'your own wp' and wordpress.org
+  so that preloaders and updates won't show up. If you have a lot of database lookups this WILL speed things up.
+<PRE>
+  define( 'inspect_http_requests_ignored_urls', [
+	'wordpress.org',
+        'api.woocommerce.com',
+        'api',
+  ]);
+</PRE>
 = 1.0.4 =
 * Support WordPress 6.3
 
